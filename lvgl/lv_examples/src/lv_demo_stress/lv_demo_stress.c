@@ -190,15 +190,15 @@ static void obj_test_task_cb(lv_task_t * param)
             break;
 
         case 8:
-              obj = lv_win_create(lv_scr_act(), NULL);
-              lv_obj_set_size(obj, LV_HOR_RES / 2, LV_VER_RES / 2);
-              lv_obj_align(obj, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
-              lv_win_set_title(obj, "Window title");
-              lv_win_add_btn(obj, LV_SYMBOL_CLOSE);
-              lv_win_add_btn(obj, LV_SYMBOL_DOWN);
-              auto_del(obj, TIME_STEP * 3 + 5);
+              //obj = lv_win_create(lv_scr_act(), NULL);
+              //lv_obj_set_size(obj, LV_HOR_RES / 2, LV_VER_RES / 2);
+              //lv_obj_align(obj, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
+              //lv_win_set_title(obj, "Window title");
+              //lv_win_add_btn(obj, LV_SYMBOL_CLOSE);
+              //lv_win_add_btn(obj, LV_SYMBOL_DOWN);
+              //auto_del(obj, TIME_STEP * 3 + 5);
 
-              obj = lv_calendar_create(obj, NULL);
+              //obj = lv_calendar_create(obj, NULL);
               break;
         case 9:
             lv_textarea_set_text(ta, "A very very long text which will should make the text area scrollable"

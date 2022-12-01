@@ -17,8 +17,8 @@
  *====================*/
 
 /* Maximal horizontal and vertical resolution to support by the library.*/
-#define LV_HOR_RES_MAX          (800)
-#define LV_VER_RES_MAX          (480)
+#define LV_HOR_RES_MAX          (480)
+#define LV_VER_RES_MAX          (320)
 
 /* Color depth:
  * - 1:  1 byte per pixel
@@ -26,7 +26,7 @@
  * - 16: RGB565
  * - 32: ARGB8888
  */
-#define LV_COLOR_DEPTH     32
+#define LV_COLOR_DEPTH     16
 
 /* Swap the 2 bytes of RGB565 color.
  * Useful if the display has a 8 bit interface (e.g. SPI)*/
@@ -413,10 +413,10 @@ typedef void * lv_font_user_data_t;
  #define LV_USE_THEME_MONO        1
 
 #define LV_THEME_DEFAULT_INCLUDE            <stdint.h>      /*Include a header for the init. function*/
-#define LV_THEME_DEFAULT_INIT               lv_theme_material_init
-#define LV_THEME_DEFAULT_COLOR_PRIMARY      LV_COLOR_RED
+#define LV_THEME_DEFAULT_INIT               lv_theme_mono_init
+#define LV_THEME_DEFAULT_COLOR_PRIMARY      LV_COLOR_WHITE
 #define LV_THEME_DEFAULT_COLOR_SECONDARY    LV_COLOR_BLUE
-#define LV_THEME_DEFAULT_FLAG               LV_THEME_MATERIAL_FLAG_LIGHT
+#define LV_THEME_DEFAULT_FLAG               LV_THEME_MATERIAL_FLAG_DARK
 #define LV_THEME_DEFAULT_FONT_SMALL         &lv_font_montserrat_16
 #define LV_THEME_DEFAULT_FONT_NORMAL        &lv_font_montserrat_16
 #define LV_THEME_DEFAULT_FONT_SUBTITLE      &lv_font_montserrat_16
@@ -679,7 +679,7 @@ typedef void * lv_obj_user_data_t;
 #endif
 
 /*Window (dependencies: lv_cont, lv_btn, lv_label, lv_img, lv_page)*/
-#define LV_USE_WIN      1
+#define LV_USE_WIN      0
 
 /*==================
  * Non-user section

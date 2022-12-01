@@ -90,6 +90,41 @@ bool evdev_set_file(char* dev_name)
 
      return true;
 }
+
+static void xpt2046_corr(int16_t * x, int16_t * y)
+{
+    //fprintf(stderr, "B X=%d, Y=%d\n", *x, *y);
+
+#if XPT2046_XY_SWAP != 0
+    int16_t swap_tmp;
+    swap_tmp = *x;
+    *x = *y;
+    *y = swap_tmp;
+#endif
+
+    if((*x) > XPT2046_X_MIN)(*x) -= XPT2046_X_MIN;
+    else(*x) = 0;
+
+    if((*y) > XPT2046_Y_MIN)(*y) -= XPT2046_Y_MIN;
+    else(*y) = 0;
+
+    (*x) = (uint32_t)((uint32_t)(*x) * XPT2046_HOR_RES) /
+           (XPT2046_X_MAX - XPT2046_X_MIN);
+
+    (*y) = (uint32_t)((uint32_t)(*y) * XPT2046_VER_RES) /
+           (XPT2046_Y_MAX - XPT2046_Y_MIN);
+
+#if XPT2046_X_INV != 0
+    (*x) =  XPT2046_HOR_RES - (*x);
+#endif
+
+#if XPT2046_Y_INV != 0
+    (*y) =  XPT2046_VER_RES - (*y);
+#endif
+
+
+}
+
 /**
  * Get the current position and state of the evdev
  * @param data store the evdev data here
@@ -186,12 +221,15 @@ bool evdev_read(lv_indev_drv_t * drv, lv_indev_data_t * data)
         return false;
     /*Store the collected data*/
 
+    xpt2046_corr(&evdev_root_x, &evdev_root_y);
+
 #if EVDEV_CALIBRATE
     data->point.x = map(evdev_root_x, EVDEV_HOR_MIN, EVDEV_HOR_MAX, 0, lv_disp_get_hor_res(drv->disp));
     data->point.y = map(evdev_root_y, EVDEV_VER_MIN, EVDEV_VER_MAX, 0, lv_disp_get_ver_res(drv->disp));
 #else
     data->point.x = evdev_root_x;
     data->point.y = evdev_root_y;
+    //printf("X: %d, Y: %d\n", evdev_root_x, evdev_root_y);
 #endif
 
     data->state = evdev_button;

@@ -3,7 +3,14 @@
 #include "lvgl/lv_drivers/indev/evdev.h"
 #include "lvgl/lv_examples/lv_examples.h"
 #include <unistd.h>
+#include <stdio.h>
+#include <pthread.h>
+#include "lvgl/car/cam/cam.h"
+#include "lvgl/car/ui/ui.h"
 //#include <stdio.h>
+#include "lvgl/car/cam/models.h"
+#include "lvgl/car/cam/overlap.h"
+#include "lvgl/car/cam/filter.h"
 
 // display buffer size - not sure if this size is really needed
 #define LV_BUF_SIZE 384000		// 800x480
@@ -13,10 +20,17 @@ static lv_disp_buf_t disp_buf;
 static lv_color_t lvbuf1[LV_BUF_SIZE];
 static lv_color_t lvbuf2[LV_BUF_SIZE];
 
+void* camera_loop() {
+	while(true) {
+		update_frame(BACK_CAM);
+		usleep(5e3);
+	}
+
+	return 0;
+}
 
 int main(void)
 {
-
 	// LittlevGL init
 	lv_init();
 
@@ -28,6 +42,17 @@ int main(void)
 
 	// Initialize `disp_buf` with the display buffer(s)
 	lv_disp_buf_init(&disp_buf, lvbuf1, lvbuf2, LV_BUF_SIZE);
+
+	//lv_theme_apply(lv_scr_act(), LV_THEME_MATERIAL_FLAG_DARK);
+
+	init_cams();
+	init_models();
+	restore_circle_param();
+	restore_spot_param();
+	restore_lookat_param();
+	restore_top_param();
+	
+	load_car_icon();
 
 	// Initialize and register a display driver
 	lv_disp_drv_t disp_drv;
@@ -42,21 +67,31 @@ int main(void)
 	indev_drv.type = LV_INDEV_TYPE_POINTER;
 	indev_drv.read_cb = evdev_read;    // defined in lv_drivers/indev/evdev.h
 	lv_indev_drv_register(&indev_drv);
-/*
-	// Create a "Hello world!" label
-	lv_obj_t * label = lv_label_create(lv_scr_act(), NULL);
-	lv_label_set_text(label, "Hello world!");
-	lv_obj_align(label, NULL, LV_ALIGN_CENTER, 0, 0);
-*/
 
-	lv_demo_widgets();
-//	lv_demo_benchmark();
-//	lv_demo_stress();
+	//back_view_eye_calib_screen(lv_scr_act());
+	//lv_demo_widgets();
+	//back_view_dir_calib_screen(lv_scr_act());
+	//back_view_eye_calib_screen(lv_scr_act());
+	//back_view_down_calib_screen(lv_scr_act());
+	menu();
+	//back_top_calib(lv_scr_act());
 
+	pthread_t cam_loop_thread;
+	if (0 != pthread_create(&cam_loop_thread, NULL, camera_loop, NULL)) {
+		fprintf(stderr, "[FATAL] fail to create cam loop thread!\n");
+		return 0;
+	}
 	// Handle LitlevGL tasks (tickless mode)
 	while(1) {
+		if (camera_has_update(BACK_CAM, true)) {
+			update_video_ui();
+		}
+		
+		lock_camera_update();
 		lv_tick_inc(5);
 		lv_task_handler();
+		unlock_camera_update();
+
 		usleep(5000);
 	}
 	return 0;

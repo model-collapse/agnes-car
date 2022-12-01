@@ -8,11 +8,11 @@ PREFIX = /local
 CC=gcc
 CXX=g++
 CFLAGS = -Wall -Wshadow -Wundef -Wmaybe-uninitialized
-CFLAGS += -O3 -g3 -I./
+CFLAGS += -g3 -I./
 
 # directory for local libs
 LDFLAGS = -L$(DESTDIR)$(PREFIX)/lib
-LIBS += -lstdc++ -lm
+LIBS += -lstdc++ -lm -lpthread
 
 VPATH =
 
@@ -20,28 +20,36 @@ $(info LDFLAGS ="$(LDFLAGS)")
 
 LVGL_DIR = lvgl
 
+include $(LVGL_DIR)/car/car.mk
 include $(LVGL_DIR)/lvgl.mk
 include $(LVGL_DIR)/lv_drivers/lv_drivers.mk
 include $(LVGL_DIR)/lv_examples/lv_examples.mk
 
 # folder for object files
-OBJDIR = ./obj
+OBJDIRC = ./objc
+OBJDIRCXX = ./objcxx
 
 CSRCS += $(wildcard *.c)
+CXXSRCS += $(wildcard *.cpp)
+COBJS := $(patsubst %.c,$(OBJDIRC)/%.o,$(CSRCS))
+CXXOBJS := $(patsubst %.cpp,$(OBJDIRCXX)/%.o,$(CXXSRCS))
 
-COBJS = $(patsubst %.c,$(OBJDIR)/%.o,$(CSRCS))
-
-SRCS = $(CSRCS)
-OBJS = $(COBJS)
+SRCS = $(CSRCS) $(CXXSRCS)
+OBJS = $(COBJS) $(CXXOBJS)
 
 #.PHONY: clean
 
 all: default
 
-$(OBJDIR)/%.o: %.c
-	@mkdir -p $(OBJDIR)
+$(OBJDIRC)/%.o: %.c 
+	@mkdir -p $(OBJDIRC)
 	@$(CC)  $(CFLAGS) -c $< -o $@
 	@echo "CC $<"
+
+$(OBJDIRCXX)/%.o: %.cpp
+	@mkdir -p $(OBJDIRCXX)
+	@$(CXX)  $(CFLAGS) -c $< -o $@
+	@echo "CXX $<"
 
 default: $(OBJS)
 	$(CC) -o $(BIN) $(OBJS) $(LDFLAGS) $(LIBS)

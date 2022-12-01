@@ -219,7 +219,7 @@
 #endif
 
 #if USE_FBDEV
-#  define FBDEV_PATH          "/dev/fb0"
+#  define FBDEV_PATH          "/dev/fb1"
 #endif
 
 /*-----------------------------------------
@@ -241,7 +241,7 @@
  *    XPT2046
  *--------------*/
 #ifndef USE_XPT2046
-#  define USE_XPT2046         0
+#  define USE_XPT2046         1
 #endif
 
 #if USE_XPT2046
@@ -253,8 +253,8 @@
 #  define XPT2046_Y_MAX       3800
 #  define XPT2046_AVG         4
 #  define XPT2046_X_INV       0
-#  define XPT2046_Y_INV       0
-#  define XPT2046_XY_SWAP     0
+#  define XPT2046_Y_INV       1
+#  define XPT2046_XY_SWAP     1
 #endif
 
 /*-----------------
@@ -321,7 +321,7 @@
 #endif
 
 #if USE_EVDEV
-#  define EVDEV_NAME   "/dev/input/event0"        /*You can use the "evtest" Linux tool to get the list of devices and test them*/
+#  define EVDEV_NAME   "/dev/event_touch"        /*You can use the "evtest" Linux tool to get the list of devices and test them*/
 #  define EVDEV_SWAP_AXES         0               /*Swap the x and y axes of the touchscreen*/
 
 #  define EVDEV_CALIBRATE         0               /*Scale and offset the touchscreen coordinates by using maximum and minimum values for each axis*/
