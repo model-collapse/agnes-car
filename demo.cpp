@@ -11,6 +11,7 @@
 #include "lvgl/car/cam/models.h"
 #include "lvgl/car/cam/overlap.h"
 #include "lvgl/car/cam/filter.h"
+#include "lvgl/car/sensor/nav.h"
 
 // display buffer size - not sure if this size is really needed
 #define LV_BUF_SIZE 384000		// 800x480
@@ -20,7 +21,7 @@ static lv_disp_buf_t disp_buf;
 static lv_color_t lvbuf1[LV_BUF_SIZE];
 static lv_color_t lvbuf2[LV_BUF_SIZE];
 
-void* camera_loop() {
+void* camera_loop(void* p) {
 	while(true) {
 		update_frame(BACK_CAM);
 		usleep(5e3);
@@ -45,6 +46,7 @@ int main(void)
 
 	//lv_theme_apply(lv_scr_act(), LV_THEME_MATERIAL_FLAG_DARK);
 
+	init_nav_sensor();
 	init_cams();
 	init_models();
 	restore_circle_param();
@@ -73,7 +75,8 @@ int main(void)
 	//back_view_dir_calib_screen(lv_scr_act());
 	//back_view_eye_calib_screen(lv_scr_act());
 	//back_view_down_calib_screen(lv_scr_act());
-	menu();
+	//menu();
+	meters(lv_scr_act());
 	//back_top_calib(lv_scr_act());
 
 	pthread_t cam_loop_thread;
@@ -87,6 +90,8 @@ int main(void)
 			update_video_ui();
 		}
 		
+		sync_avgs();
+		update_meters();
 		lock_camera_update();
 		lv_tick_inc(5);
 		lv_task_handler();

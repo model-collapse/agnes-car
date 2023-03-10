@@ -398,12 +398,14 @@ void update_video_ui() {
     }
 }
 
+extern lv_obj_t* img_compass;
 void reset_scene() {
     dispose_all_from_scr(lv_scr_act());
     img_eye = NULL;
     img_top = NULL;
     img_dir = NULL;
     img_down = NULL;
+    img_compass = NULL;
 }
 
 void dispose_all_from_scr(lv_obj_t* parent) {

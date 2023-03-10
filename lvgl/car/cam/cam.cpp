@@ -45,8 +45,9 @@ void init_cams() {
         abort();
     }
 
-    back_cam->set(cv::CAP_PROP_FRAME_WIDTH, 1920);
-    back_cam->set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
+    back_cam->set(cv::CAP_PROP_BUFFERSIZE, 1);
+    back_cam->set(cv::CAP_PROP_FRAME_WIDTH, 800);
+    back_cam->set(cv::CAP_PROP_FRAME_HEIGHT, 400);
 
     pthread_rwlock_init(&lock_back_cam_updated, NULL);
     pthread_rwlock_init(&lock_back_cams, NULL);

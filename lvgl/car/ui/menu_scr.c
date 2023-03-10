@@ -11,6 +11,7 @@ lv_obj_t* btn_calib_top;
 lv_obj_t* btn_view_panel;
 lv_obj_t* btn_view_optf;
 lv_obj_t* btn_meters;
+lv_obj_t* btn_exit;
 
 void menu_cb(lv_obj_t* obj, lv_event_t event);
 
@@ -47,6 +48,10 @@ void menu() {
     lv_obj_align(btn_meters, parent, LV_ALIGN_IN_TOP_LEFT, 240, 160);
     lv_obj_set_event_cb(btn_meters, menu_cb);
 
+    btn_exit = txt_btn(parent, "Exit", 180, 50);
+    lv_obj_align(btn_exit, parent, LV_ALIGN_IN_TOP_LEFT, 240, 220);
+    lv_obj_set_event_cb(btn_exit, menu_cb);
+
 }
 
 void menu_cb(lv_obj_t* obj, lv_event_t event){
@@ -67,6 +72,8 @@ void menu_cb(lv_obj_t* obj, lv_event_t event){
             optf_panel(parent);
         } else if (obj == btn_meters) {
             meters(parent);           
+        } else if (obj == btn_exit) {
+            abort();           
         }
     }
 }

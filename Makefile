@@ -2,6 +2,7 @@
 # Makefile
 #
 BIN = demo
+TBIN = cam_test
 DESTDIR = /usr
 PREFIX = /local
 
@@ -37,6 +38,9 @@ CXXOBJS := $(patsubst %.cpp,$(OBJDIRCXX)/%.o,$(CXXSRCS))
 SRCS = $(CSRCS) $(CXXSRCS)
 OBJS = $(COBJS) $(CXXOBJS)
 
+OBJS_TEST := $(filter-out ./objcxx/demo.o, $(OBJS)) 
+OBJS_DEMO := $(filter-out ./objcxx/cam_test.o, $(OBJS)) 
+
 #.PHONY: clean
 
 all: default
@@ -48,11 +52,14 @@ $(OBJDIRC)/%.o: %.c
 
 $(OBJDIRCXX)/%.o: %.cpp
 	@mkdir -p $(OBJDIRCXX)
-	@$(CXX)  $(CFLAGS) -c $< -o $@
+	@$(CXX)  $(CFLAGS) -std=c++11 -c $< -o $@ 
 	@echo "CXX $<"
 
-default: $(OBJS)
-	$(CC) -o $(BIN) $(OBJS) $(LDFLAGS) $(LIBS)
+default: $(OBJS_DEMO)
+	$(CC) -o $(BIN) $(OBJS_DEMO) $(LDFLAGS) $(LIBS)
+
+fps_test: $(OBJS_TEST)
+	$(CC) -o $(TBIN) $(OBJS_TEST) $(LDFLAGS) $(LIBS)
 
 #	nothing to do but will print info
 nothing:

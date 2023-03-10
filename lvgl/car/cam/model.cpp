@@ -34,7 +34,7 @@ void update_frame(int32_t cam) {
             return;
         }
 
-        (*back_cam) >> frame;        
+        (*back_cam) >> frame;   
     } else  {
         fprintf(stderr, "cam1\n");
         return;
