@@ -13,6 +13,9 @@ extern "C" {
 #define TOP_EXP_MODE_VIEW 1
 #define TOP_EXP_MODE_TRACK 2
 
+int32_t lookat_has_changed();
+void reset_lookat_change();
+
 void set_lookat_model(int32_t model);
 
 void move_look_vertical(double v);

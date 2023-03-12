@@ -39,7 +39,7 @@ void poseEstimate(const cv::Mat& src, const cv::Mat& base, cv::Mat& rig_trans) {
 extern float margin;
 extern const int32_t car_width;
 cv::Mat base;
-void top_view_optf(const cv::Mat& src, cv::Mat& dst) {
+void top_view_optf(const cv::Mat& src, cv::Mat& dst, cv::Mat& cache) {
     if (base.empty()) {
         base = src.clone();
         crop_to_top_view(src, dst);
@@ -74,7 +74,7 @@ void top_view_optf(const cv::Mat& src, cv::Mat& dst) {
 }
 
 
-void optf_visual(const cv::Mat& src, cv::Mat& dst) {
+void optf_visual(const cv::Mat& src, cv::Mat& dst, cv::Mat& cache) {
     if (base.empty()) {
         base = src.clone();
         dst = src;

@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+int32_t circle_has_changed();
+void reset_circle_change();
 void update_circle(int32_t x, int32_t y, int32_t r);
 
 void circle_move_x(int32_t v);

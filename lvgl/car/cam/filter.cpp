@@ -13,13 +13,28 @@ struct LookAtAndFov3D {
     cv::Vec3f v;
 
     double fov;
+    bool changed;
 };
 
 LookAtAndFov3D look_dir3;
 LookAtAndFov3D look_down3;
 LookAtAndFov3D* look_cur;
 
-static void extract_lookat_view_l3d(const cv::Mat& rsrc, cv::Mat& dst, cv::Point2f center, double radius, LookAtAndFov3D* lkf, int32_t dsize);
+int32_t lookat_has_changed() {
+    if (look_cur != NULL) {
+        look_cur->changed == true ? 1 : 0;
+    }
+
+    return 0;
+}
+
+void reset_lookat_change() {
+    if (look_cur != NULL) {
+        look_cur->changed = false;
+    }
+}
+
+static void extract_lookat_view_l3d(const cv::Mat& rsrc, cv::Mat& dst, cv::Point2f center, double radius, int32_t dsize, cv::Mat& cache);
 
 double l2LenP2f(cv::Vec2f v) {
     return sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -50,7 +65,7 @@ cv::Vec3f crossV3(cv::Vec3f p1, cv::Vec3f p2) {
 }
 
 #define min(a, b) (a < b) ? a : b
-void extract_dir_view(const cv::Mat& src, cv::Mat& dst) {
+void extract_dir_view(const cv::Mat& src, cv::Mat& dst, cv::Mat& cache) {
     int32_t cx;
     int32_t cy;
     int32_t r;
@@ -62,14 +77,14 @@ void extract_dir_view(const cv::Mat& src, cv::Mat& dst) {
     float fcy = (float)cy / BACK_EYE_HEIGHT;
     float fr = (float)r / BACK_EYE_WIDTH;
 
-    extract_lookat_view_l3d(src, dst, cv::Point2f(fcx, fcy), fr, look_cur, BACK_DIR_WIDTH);
+    extract_lookat_view_l3d(src, dst, cv::Point2f(fcx, fcy), fr, BACK_DIR_WIDTH, cache);
 }
 
 void extract_lookdown_view(const cv::Mat& src, cv::Mat& dst) {
 }
 
 #define max(a, b) (a > b) ? a : b
-void regulate_img(const cv::Mat& rsrc, cv::Mat& dst) {
+void regulate_img(const cv::Mat& rsrc, cv::Mat& dst, cv::Mat& cache) {
     if (rsrc.cols > rsrc.rows) {
         int32_t offx = (rsrc.cols - rsrc.rows) / 2;
         dst.create(cv::Size(rsrc.cols, rsrc.cols), CV_8UC3);
@@ -102,6 +117,7 @@ void move_look_vertical(double v) {
     if (look_cur != NULL) {
         look_cur->lookAt = l2NormV3(look_cur->lookAt + look_cur->v * v, 1.0);
         regulate_uv(look_cur);
+        look_cur->changed = true;
     }
 }
 
@@ -109,6 +125,7 @@ void move_look_horizontal(double v) {
     if (look_cur != NULL) {
         look_cur->lookAt = l2NormV3(look_cur->lookAt + look_cur->u * v, 1.0);
         regulate_uv(look_cur);
+        look_cur->changed = true;
     }
 }
 
@@ -119,12 +136,14 @@ void pan_look(double v) {
 
         look_cur->u = look_cur->u * cosv - look_cur->v * sinv;
         look_cur->v = look_cur->u * sinv + look_cur->v * cosv;
+        look_cur->changed = true;
     }
 }
 
 void incr_fov(double v) {
     if (look_cur) {
         look_cur->fov += v;
+        look_cur->changed = true;
         //fprintf(stderr, "fov = %f, v = %f\n", look_cur->fov, v);
     }
 }
@@ -158,7 +177,7 @@ int32_t sph_view_trans(cv::Vec2f s, transformCtx& t, cv::Vec2i& nloc) {
     return 0;
 }
 
-void extract_lookat_view_l3d(const cv::Mat& rsrc, cv::Mat& dst, cv::Point2f center, double radius, LookAtAndFov3D* lkf, int32_t dsize) {
+void extract_lookat_view_l3d(const cv::Mat& rsrc, cv::Mat& dst, cv::Point2f center, double radius, int32_t dsize, cv::Mat& cache) {
     if (dsize%2 != 1) {
         dsize += 1;
     }
@@ -172,31 +191,54 @@ void extract_lookat_view_l3d(const cv::Mat& rsrc, cv::Mat& dst, cv::Point2f cent
         src = rsrc(cv::Rect(0, offy, rsrc.cols, rsrc.rows - 2*offy));
     }
 
-    int32_t scl = min(src.cols, src.rows);
-    transformCtx ctx{cv::Point2f{center.x * scl, center.y * scl}, radius * scl, lkf};
+    bool build_map = false;
+    if (cache.empty()) {
+        cache.create(cv::Size(dsize, dsize), CV_16UC3);
+        build_map = true;
+    }
 
+    if (circle_has_changed() || lookat_has_changed()) {
+        build_map = true;
+    }
+
+    LookAtAndFov3D* lkf = look_cur;
     int32_t hdsize = dsize / 2;
     dst.create(cv::Size(dsize, dsize), CV_8UC3);
+    if (build_map) {
+        int32_t scl = min(src.cols, src.rows);
+        transformCtx ctx{cv::Point2f{center.x * scl, center.y * scl}, radius * scl, lkf};
 
-    double projectUnit = tan((lkf->fov/180.0)*(CV_PI/2.0)) / hdsize;
-    for (int32_t y = -hdsize; y < hdsize; y++) {
-		for (int32_t x = -hdsize; x < hdsize; x++) {
-            cv::Vec2i sc;
-            cv::Vec3b val;
-            int32_t rtc = sph_view_trans(cv::Vec2f(x * projectUnit, y * projectUnit), ctx, sc);
-            if (rtc) {
-                val = cv::Vec3b(0, 0, 0);
-            } else {
-                int slocX = sc[0];
-                int slocY = sc[1];
-                if (slocX < 0 || slocX >= src.cols || slocY < 0 || slocY >= src.rows) {
-				    val = cv::Vec3b(0, 255, 0);
-			    } else {
-                    val = src.at<cv::Vec3b>(sc[1], sc[0]);
+        double projectUnit = tan((lkf->fov/180.0)*(CV_PI/2.0)) / hdsize;
+        for (int32_t y = -hdsize; y < hdsize; y++) {
+            for (int32_t x = -hdsize; x < hdsize; x++) {
+                cv::Vec2i sc;
+                cv::Vec3w val;
+                int32_t rtc = sph_view_trans(cv::Vec2f(x * projectUnit, y * projectUnit), ctx, sc);
+                if (rtc) {
+                    val = cv::Vec3w(0, 0, 0);
+                } else {
+                    int slocX = sc[0];
+                    int slocY = sc[1];
+                    if (slocX < 0 || slocX >= src.cols || slocY < 0 || slocY >= src.rows) {
+                        val = cv::Vec3w(0, 0, 0);
+                    } else {
+                        val = cv::Vec3w(sc[1], sc[0], 1);
+                    }
                 }
+                
+                cache.at<cv::Vec3w>(y+hdsize, x+hdsize) = val;
             }
-            
-            dst.at<cv::Vec3b>(y+hdsize, x+hdsize) = val;
+        }
+    } 
+
+    for (int32_t y = 0; y < dst.rows; y++) {
+        for (int32_t x = 0; x < dst.cols; x++) {
+            cv::Vec3w loc = cache.at<cv::Vec3w>(y, x);
+            cv::Vec3b val = cv::Vec3b(0, 0, 0);
+            if (loc[2] > 0) {
+                val = rsrc.at<cv::Vec3b>(loc[0], loc[1]);
+            }
+            dst.at<cv::Vec3b>(y, x) = val;
         }
     }
 }
@@ -443,9 +485,7 @@ int32_t get_top_expand_mode() {
     return top_exp_mode;
 }
 
-void extract_top_view(const cv::Mat& src, cv::Mat& dst) {
-    cv::Mat tmp;
-
+void extract_top_view(const cv::Mat& src, cv::Mat& dst, cv::Mat& cache) {
     int32_t cx;
     int32_t cy;
     int32_t r;
@@ -454,14 +494,14 @@ void extract_top_view(const cv::Mat& src, cv::Mat& dst) {
     float fcy = (float)cy / BACK_EYE_HEIGHT;
     float fr = (float)r / BACK_EYE_WIDTH;
 
-    cv::Mat rsrc;
+    /*cv::Mat rsrc;
     if (src.cols > src.rows) {
         int32_t offx = (src.cols - src.rows) / 2;
         rsrc = src(cv::Rect(offx, 0, src.cols - 2*offx, src.rows));
     } else {
         int32_t offy = (src.rows - src.cols) / 2;
         rsrc = src(cv::Rect(0, offy, src.cols, src.rows - 2*offy));
-    }
+    }*/
 
     int32_t scl = min(src.cols, src.rows);
     transformCtx ctx{cv::Point2f{fcx * scl, fcy * scl}, fr * scl, &look_down3};
@@ -471,42 +511,82 @@ void extract_top_view(const cv::Mat& src, cv::Mat& dst) {
         dst_width *= 2;
         start_x = BACK_TOP_WIDTH / 2;
     }
-    dst.create(BACK_TOP_HEIGHT, dst_width, CV_8UC3);
+    dst.create(cv::Size(dst_width, BACK_TOP_HEIGHT), CV_8UC3);
     dst.setTo(cv::Vec3b(1, 1, 1));
 
-    cv::Mat tvmi = top_view_matrix;
-    float tvmia[3][3];
-    for (int y = 0; y < 3; y++) {
-        for (int x = 0; x < 3; x++) {
-            tvmia[y][x] = (float)tvmi.at<double>(y, x);
-        }
+    int32_t hdsize = BACK_DOWN_WIDTH / 2;
+    bool build_map = false;
+    if (cache.empty()) {
+        cache.create(cv::Size(dst_width, BACK_TOP_HEIGHT), CV_16UC3);
+        cache.setTo(cv::Vec3b(0, 0, 0));
+        build_map = true;
     }
 
-    float margin_start = (BACK_TOP_HEIGHT - CAR_ICON_HEIGHT) / 5 + CAR_ICON_HEIGHT;
-    float margin_size = (float)margin / car_width * CAR_ICON_WIDTH;
+    if (circle_has_changed() || lookat_has_changed()) {
+        build_map = true;
+    }
 
-    int32_t hdsize = BACK_DOWN_WIDTH / 2;
-    double projectUnit = tan((look_down3.fov/180.0)*(CV_PI/2.0)) / hdsize;
-    for (int y = (int)(margin_start + margin_size); y < BACK_TOP_HEIGHT; y++) {
-        for (int x = 0; x < dst_width; x++) {
-            cv::Vec2f imc = warpPoint(tvmia, cv::Vec2d((float)x - start_x, (float)y));
-            imc[0] -= hdsize;
-            imc[1] -= hdsize;
-
-            cv::Vec2i sc;
-            int32_t rc = sph_view_trans(cv::Vec2f(imc[0] * projectUnit, imc[1] * projectUnit), ctx, sc);
-            cv::Vec3b val = cv::Vec3b(10, 10, 10);
-            if (!rc) {
-                int slocX = sc[0];
-                int slocY = sc[1];
-                if (slocX < 0 || slocX >= src.cols || slocY < 0 || slocY >= src.rows) {
-				    val = cv::Vec3b(0, 255, 0);
-			    } else {
-                    val = rsrc.at<cv::Vec3b>(sc[1], sc[0]);
-                }
+    if (build_map) {
+        cv::Mat tvmi = top_view_matrix;
+        float tvmia[3][3];
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 3; x++) {
+                tvmia[y][x] = (float)tvmi.at<double>(y, x);
             }
+        }
 
+        float margin_start = (BACK_TOP_HEIGHT - CAR_ICON_HEIGHT) / 5 + CAR_ICON_HEIGHT;
+        float margin_size = (float)margin / car_width * CAR_ICON_WIDTH;
+
+        int32_t casea = 0;
+        int32_t caseb = 0;
+        int32_t casec = 0;
+        double projectUnit = tan((look_down3.fov/180.0)*(CV_PI/2.0)) / hdsize;
+        for (int y = (int)(margin_start + margin_size); y < BACK_TOP_HEIGHT; y++) {
+            for (int x = 0; x < dst_width; x++) {
+                cv::Vec2f imc = warpPoint(tvmia, cv::Vec2d((float)x - start_x, (float)y));
+                imc[0] -= hdsize;
+                imc[1] -= hdsize;
+
+                cv::Vec2i sc;
+                int32_t rc = sph_view_trans(cv::Vec2f(imc[0] * projectUnit, imc[1] * projectUnit), ctx, sc);
+                cv::Vec3w val;
+                if (rc) {
+                    val = cv::Vec3w(0, 0, 0);
+                    casea ++;
+                } else {
+                    int slocX = sc[0];
+                    int slocY = sc[1];
+                    if (slocX < 0 || slocX >= src.cols || slocY < 0 || slocY >= src.rows) {
+                        val = cv::Vec3w(0, 0, 0);
+                        caseb ++;
+                    } else {
+                        val = cv::Vec3w(sc[1], sc[0], 1);
+                        casec ++;
+                    }
+                }
+                
+                cache.at<cv::Vec3w>(y, x) = val;
+            }
+        }
+
+        fprintf(stdout, "casea=%d, caseb=%d, casec=%d\n", casea, caseb, casec);
+    }
+
+    int32_t cased = 0;
+    for (int32_t y = 0; y < dst.rows; y++) {
+        for (int32_t x = 0; x < dst.cols; x++) {
+            cv::Vec3w loc = cache.at<cv::Vec3w>(y, x);
+            cv::Vec3b val = cv::Vec3b(0, 25, 0);
+            if (loc[2] > 0) {
+                val = src.at<cv::Vec3b>(loc[0], loc[1]);
+                cased ++;
+            } else {
+                cased --;
+            }
             dst.at<cv::Vec3b>(y, x) = val;
         }
     }
+
+    //fprintf(stdout, "cased=%d\n", cased);
 }

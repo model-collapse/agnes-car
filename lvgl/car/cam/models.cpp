@@ -10,12 +10,27 @@
 
 ViewModel models[MAX_MODELS];
 
+void clear_tagged_model_cache(ViewModel* m) {
+    for (int i = 0; i < MAX_FILTERS; i++) {
+        if (m->cacheTags[i]) {
+            m->filterCache[i].release();
+            m->cacheTags[i] = false;
+        }
+    }
+}
+
 void enable_model(int32_t id) {
     models[id].enabled = true;
+    for (int i = 0; i < MAX_FILTERS; i++) {
+        models[id].cacheTags[i] = true;
+    }
 }
 
 void disable_model(int32_t id) {
     models[id].enabled = false;
+    for (int i = 0; i < MAX_FILTERS; i++) {
+        models[id].cacheTags[i] = true;
+    }
 }
 
 void reset_all_models() {
@@ -23,7 +38,7 @@ void reset_all_models() {
         if (models[i].id < 0) {
             break;
         }
-        models[i].enabled = false;
+        disable_model(i);
     }
 }
 

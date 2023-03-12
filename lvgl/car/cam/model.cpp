@@ -41,6 +41,10 @@ void update_frame(int32_t cam) {
     }
 
     for (int32_t i = 0; i < MAX_MODELS; i++) {
+        clear_tagged_model_cache(models + i);
+    }
+
+    for (int32_t i = 0; i < MAX_MODELS; i++) {
         ViewModel* mp = models + i;
         if (!mp->enabled) {
             continue;
@@ -68,7 +72,7 @@ void update_frame(int32_t cam) {
             if (mp->filters[ii] != NULL) {
                 cv::Mat mpb;
                 //fprintf(stderr, "filter\n");
-                mp->filters[ii](ftd, mpb);
+                mp->filters[ii](ftd, mpb, mp->filterCache[ii]);
                 ftd = mpb;
             } else {
                 break;

@@ -70,13 +70,15 @@ int main(void)
 	indev_drv.read_cb = evdev_read;    // defined in lv_drivers/indev/evdev.h
 	lv_indev_drv_register(&indev_drv);
 
+	sleep(1);
 	//back_view_eye_calib_screen(lv_scr_act());
 	//lv_demo_widgets();
 	//back_view_dir_calib_screen(lv_scr_act());
 	//back_view_eye_calib_screen(lv_scr_act());
 	//back_view_down_calib_screen(lv_scr_act());
 	//menu();
-	meters(lv_scr_act());
+	//meters(lv_scr_act());
+	back_view_panel(lv_scr_act());
 	//back_top_calib(lv_scr_act());
 
 	pthread_t cam_loop_thread;

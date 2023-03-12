@@ -7,7 +7,7 @@
 #define MAX_FILTERS 4
 #define MAX_OVERLAPS 4
 
-typedef void (*ViewFilter) (const cv::Mat& src, cv::Mat& dst);
+typedef void (*ViewFilter) (const cv::Mat& src, cv::Mat& dst, cv::Mat& cache);
 typedef void (*Overlap) (cv::Mat& img);
 typedef void (*ModelInit) ();
 
@@ -16,6 +16,8 @@ struct ViewModel {
     int32_t cam;
     ModelInit init;
     ViewFilter filters[MAX_FILTERS];
+    bool cacheTags[MAX_FILTERS];
+    cv::Mat filterCache[MAX_FILTERS];
     Overlap overlaps[MAX_OVERLAPS];
     int32_t width;
     int32_t height;
@@ -29,5 +31,6 @@ struct ViewModel {
 
 void init_model(ViewModel* m);
 void cvtRGB16(const cv::Mat& smat, uint16_t* dst, int width, int height);
+void clear_tagged_model_cache(ViewModel* m);
 
 #endif

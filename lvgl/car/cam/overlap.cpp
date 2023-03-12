@@ -9,6 +9,15 @@
 int32_t circle_x;
 int32_t circle_y;
 int32_t circle_r;
+bool circle_changed;
+
+void reset_circle_change() {
+    circle_changed = false;
+}
+
+int32_t circle_has_changed() {
+    return circle_changed ? 1 : 0;
+}
 
 void circle_move_x(int32_t v) {
     if (circle_x + v + circle_r > BACK_EYE_HEIGHT) {
@@ -20,6 +29,7 @@ void circle_move_x(int32_t v) {
     }
     
     circle_x += v;
+    circle_changed = true;
 }
 
 void circle_move_y(int32_t v) {
@@ -32,6 +42,7 @@ void circle_move_y(int32_t v) {
     }
     
     circle_y += v;
+    circle_changed = true;
 }
 
 void circle_move_r(int32_t v) 
@@ -53,12 +64,14 @@ void circle_move_r(int32_t v)
     }
 
     circle_r += v;
+    circle_changed = true;
 }
 
 void update_circle(int32_t x, int32_t y, int32_t r) {
     circle_x = x;
     circle_y = y;
     circle_r = r;
+    circle_changed = true;
 }
 
 void render_aim_circle(cv::Mat& frame, cv::Point center, int32_t radius) {
